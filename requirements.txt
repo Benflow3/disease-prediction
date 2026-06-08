@@ -1,9 +1,12 @@
 numpy>=1.24.0
 matplotlib>=3.7.0
 seaborn>=0.12.0
-plotly>5.15.0
+plotly>=5.15.0
 ydata-profiling>=4.5.0
 scikit-learn>=1.2.0
 ###dataset package
 ucimlrepo==0.0.7
 joblib>=1.2.0
+streamlit==1.28.0
+xgboost==2.0.0
+shap == 0.43.0

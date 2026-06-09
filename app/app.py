@@ -1,9 +1,6 @@
 import streamlit as st
-import pandas as pd
 import numpy as np
-import joblib
-import shap
-import matplotlib.pyplot as plt
+from modelhandler import load_model_pipeline,process_and_predict_disease,generate_lime_explanation
 
 st.set_page_config(
     page_title = "Disease Prediction System",
@@ -14,7 +11,11 @@ st.set_page_config(
 st.title("Disease Prediction System")
 st.markdown("Enter the patient's health parameters to predict the likelihood of heart disease with AI explanation.")
 
-st.sidebar.header("Input Patient Data")
+@st.cache_resource
+def load_model():
+    return load_model_pipeline
+model = load_model()
+
 col1, col2 = st.columns(2)
 with col1:
     age = st.slider("Age", 20, 80, 50)
@@ -32,22 +33,19 @@ with col2:
     ca = st.selectbox("Number of Major Vessels Colored by Fluoroscopy", [0, 1, 2, 3])
     thal = st.selectbox("Thalassemia", [0, 1, 2], format_func=lambda x: ["Normal", "Fixed Defect", "Reversible Defect"][x])
 
-input_data = [age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal]
-if st.button("Predict Disease",use_container_width=True):
-    prediction = predict_disease(input_data)
+raw_input_data = [age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal]
+if st.button("Analyze Patient Data",use_container_width=True):
+    prediction,probability,input_scale = process_and_predict_disease(model,input_data=raw_input_data)
     st.markdown("___")
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("Prediction Result")
         if prediction == 1:
-            st.error("The model predicts that the patient is likely to have heart disease.")
+            st.error(f"The model predicts that the patient is likely to have heart disease with probabilty of {probability[1]:.2%}")
         else:
-            st.success("The model predicts that the patient is unlikely to have heart disease.")
+            st.success("The model predicts that the patient is unlikely to have heart disease with probabilty of {probability[0]:.2%}")
     with col2:
         st.subheader("AI Explanation")
-        model = joblib.load('disease-prediction\models\heart_disease_model.joblib')
-        scaler = model.named_steps['scaler']
-        input_scaled = scaler.transform(np.array(input_data).reshape(1, -1))
-        explainer = shap.TreeExplainer(model)
-        shap_values = explainer.shap_values(input_scaled)
-        shap.summary_plot(shap_values, input_scaled, feature_names=["Age", "Sex", "Chest Pain Type", "Resting Blood Pressure", "Serum Cholesterol", "Fasting Blood Sugar", "Resting ECG", "Maximum Heart Rate", "Exercise Induced Angina", "ST Depression", "Slope of ST Segment", "Number of Vessels", "Thalassemia"])
+        with st.spinner('Generating LIME explanation...'):
+            lime_html = generate_lime_explanation(model,input_scale,input_data,featuers)
+            components.html(lime_html,height=400,scrolling=True)

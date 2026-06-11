@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import numpy as np
 from modelhandler import load_model_pipeline,process_and_predict_disease,generate_lime_explanation
 
@@ -13,7 +14,8 @@ st.markdown("Enter the patient's health parameters to predict the likelihood of 
 
 @st.cache_resource
 def load_model():
-    return load_model_pipeline
+    return load_model_pipeline()
+
 model = load_model()
 
 col1, col2 = st.columns(2)
@@ -35,17 +37,17 @@ with col2:
 
 raw_input_data = [age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal]
 if st.button("Analyze Patient Data",use_container_width=True):
-    prediction,probability,input_scale = process_and_predict_disease(model,input_data=raw_input_data)
+    prediction,probability,input_scale, prob_fn = process_and_predict_disease(model,input_data=raw_input_data)
     st.markdown("___")
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("Prediction Result")
         if prediction == 1:
-            st.error(f"The model predicts that the patient is likely to have heart disease with probabilty of {probability[1]:.2%}")
+            st.error(f"The model predicts that the patient is likely to have heart disease with probability of {probability[1]:.2%}")
         else:
-            st.success("The model predicts that the patient is unlikely to have heart disease with probabilty of {probability[0]:.2%}")
+            st.success(f"The model predicts that the patient is unlikely to have heart disease with probability of {probability[0]:.2%}")
     with col2:
         st.subheader("AI Explanation")
         with st.spinner('Generating LIME explanation...'):
-            lime_html = generate_lime_explanation(model,input_scale,input_data,featuers)
+            lime_html = generate_lime_explanation(model,input_scale,prob_fn)
             components.html(lime_html,height=400,scrolling=True)
